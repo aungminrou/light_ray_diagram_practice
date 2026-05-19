@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secondary 1 Light Ray Diagram Practice</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #eef4ff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+}
+
+h1 {
+    margin-bottom: 8px;
+}
+
+.toolbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+button {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+.tool.active {
+    background: #059669;
+}
+
+#status {
+    background: white;
+    padding: 10px 16px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+canvas {
+    border: 2px solid #cbd5e1;
+    border-radius: 14px;
+    background: white;
+    touch-action: none;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Plane Mirror Light Ray Diagram Practice</h1>
+
+<div class="toolbar">
+    <button onclick="newScenario()">New Question</button>
+
+    <button class="tool active" data-tool="construction">
+        Step 1: Construction Lines
+    </button>
+
+    <button class="tool" data-tool="image">
+        Step 2: Image
+    </button>
+
+    <button class="tool" data-tool="virtual">
+        Step 3: Image → Eye
+    </button>
+
+    <button class="tool" data-tool="reflected">
+        Step 4: Reflected Ray
+    </button>
+
+    <button id="checkBtn">Check Step</button>
+
+    <button onclick="clearDrawing()">Clear Drawing</button>
+</div>
+
+<div id="status">
+Step 1: Draw dotted construction lines.
+</div>
+
+<canvas id="canvas" width="1100" height="700"></canvas>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+const eyeImg = new Image();
+eyeImg.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAE0AAAA8CAYAAAAjdzfUAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAT0SURBVHhe7ZrNSxtPHIc/idG8bcigK25rKEsvWTwtxYNCK0HpqUgLxauQsz3k4E1Eob3FoNA/oLfeZD14X6EFvUj0pLcIBhohNAtJqJLg93f4kWAmsU222RfKPjAg892ZwLPz2Zls9BERwWMg/HyHx5/xpJnAk2YCT5oJPGkm8KSZwJNmAk+aCTxpJvCkmcCTZgLXSVtZWcHJyQnf7SpcJ+3NmzdIp9O4vb3lS67B58a3HMvLy1AUBdlsli+5A3Ih19fXJIoiHR8f8yVX4EppRERfvnwhRVHo169ffMlxXBnPFq6NKW/RTbg1pq6WRg9i2mg0+JJjuO7I0cIwDBwdHYExBkmS8OnTJ/4S5+AtOk2lUiFd10lVVUqlUrS7u0uFQoEYY5TP5/nLHcFV0nhZlUqlXfv8+TOpquqKmLpCWqVSoUwmQ7Is0/r6eoesh6RSKdra2uK7bcdxafl8nl6+fEmKotDz588pGAwSAJqamuqKo1ti6qg0Xdfp2bNnlEwmKRaLEYB28/v99OTJE36IK2LqmDRd10mSJGKMtVcX34LBIOm6zg91PKaOSMvn8/T06VMSBIH8fn+XrFYLhUKkaRo/3PGY2n5OOzs7w9u3b1GtVuHz+XB/f89f0iYQCMAwDL4bsizj48ePSKfTaDabfNlybJVmGAZWV1cxMjKCYDCIarXKX9LB/f09GGN8NwDgw4cPYIw5c+jll56VZDIZSiaTFAqFuqLYq4XD4UePH+RgTG2TpmkaxePxvoX5fD5aWFjgp+nCid3UNmmqqtLy8nLf0gRB6LkJ9MLu3dQWaZqm0czMDI2Pj3fJeay9ePGCn+ZR7I6pLdJSqRS9e/eORFHsktOrCYLQ83z2O+yMqeXSdF0nxhgtLS11yenVxsbG6PXr1/w0fTE3N0fZbJbvHjqWS9va2qJMJtNXNEdHRykcDlOhUOCn6YuLiwtijNHFxQVfGiqWn9POz88xOzuLnz9/8qUuIpEIvn79ClmW+VJfKIqCjY0N6w+9vMVhwxij8/PzrlXFt2g0Srlcjh8+MI1Gw/KYWiotn8+TqqpE///i9WhjjA1FWAurY2qpNE3TKJVKERHR2toaRSKRDlnhcJgikUjf57FByGazNDc3Z8luarm01kojIlpcXCQAFIvFaHJykjY3N00/9P+ElTG1VFrrnT9PoVD47XfKYWFVTC3fPXshy/Kjby+GiVW7qaXSVFXF1dUV320rmUwGALC3t8eXzMMvvWEjy/LAX4mGzbBj+tf/APP9+3fs7+8jHo8jkUiAMQZRFCFJEgRBQC6XQzwex/b2Nj/UVnZ2drC/v49v374hEAjw5YH4a2lnZ2c4ODjAzc0NDMNAqVRCuVxGrVZrR1MQBIiiCFmW238nEglEo1FIkgRRFCEIQvtZZ8Xzrtls4tWrV3j//j3W19f58kD8tbQ/YRgGDMNAsVhErVZDqVRCqVRCvV5HsVjsqBuGgXK5DABIJBIQBAGSJLVX7fT0dFvqwxsgSRJCoRD/0V1cXl5ifn4ex8fHUBSFL/eN5dLMUCqVUKvVUCwWO1ZtvV5HuVzuuAGteiAQQCKR6Fi1giBgYmKi4wYcHh5C13Wcnp7yH9s3rpQ2KM1m89FVe3Nz03EDqtUq7u7u8OPHD36avvknpNmNpee0fxVPmgk8aSbwpJnAk2YCT5oJPGkm8KSZ4D/bj6OiXtpDAQAAAABJRU5ErkJggg==";
+
+const grid = 40;
+const mirrorX = 640;
+
+let drawing = false;
+let currentPath = [];
+let savedPaths = [];
+
+let currentTool = 'construction';
+let currentStep = 1;
+
+let scenario = {};
+
+const completed = {
+    construction:false,
+    image:false,
+    virtual:false,
+    reflected:false
+};
+
+document.querySelectorAll('.tool').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tool').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTool = btn.dataset.tool;
+    });
+});
+
+function setStatus(text){
+    document.getElementById('status').innerHTML = text;
+}
+
+function rand(min,max){
+    return Math.floor(Math.random()*(max-min+1))+min;
+}
+
+function newScenario(){
+
+    currentStep = 1;
+
+    completed.construction = false;
+    completed.image = false;
+    completed.virtual = false;
+    completed.reflected = false;
+
+    savedPaths = [];
+    currentPath = [];
+
+    // Eye farthest from mirror
+    scenario.eyeX = grid * rand(2,4);
+
+    // Object always between eye and mirror
+    scenario.objectX = scenario.eyeX + grid * rand(3,5);
+
+    scenario.objectY = grid * rand(5,12);
+
+    // keep eye on screen
+    if(scenario.eyeX < 80){
+        scenario.eyeX = 80;
+    }
+
+    scenario.eyeY = scenario.objectY + grid * rand(-1,1);
+
+    scenario.imageX = mirrorX + (mirrorX - scenario.objectX);
+    scenario.imageY = scenario.objectY;
+
+    const shapes = ['square','rectangle','circle','triangle','dot'];
+    scenario.shape = shapes[rand(0, shapes.length-1)];
+
+    setStatus('Step 1: Draw dotted construction lines.');
+    redraw();
+}
+
+function drawGrid(){
+    ctx.strokeStyle = '#93c5fd';
+    ctx.lineWidth = 1;
+
+    for(let x=0;x<canvas.width;x+=grid){
+        ctx.beginPath();
+        ctx.moveTo(x,0);
+        ctx.lineTo(x,canvas.height);
+        ctx.stroke();
+    }
+
+    for(let y=0;y<canvas.height;y+=grid){
+        ctx.beginPath();
+        ctx.moveTo(0,y);
+        ctx.lineTo(canvas.width,y);
+        ctx.stroke();
+    }
+}
+
+function drawMirror(){
+    ctx.strokeStyle='black';
+    ctx.lineWidth=5;
+
+    ctx.beginPath();
+    ctx.moveTo(mirrorX,60);
+    ctx.lineTo(mirrorX,640);
+    ctx.stroke();
+
+    ctx.lineWidth=2;
+
+    for(let y=60;y<640;y+=18){
+        ctx.beginPath();
+        ctx.moveTo(mirrorX+2,y);
+        ctx.lineTo(mirrorX+18,y+12);
+        ctx.stroke();
+    }
+}
+
+function drawObject(x=scenario.objectX, y=scenario.objectY, dotted=false){
+
+    ctx.save();
+
+    if(dotted){
+        ctx.setLineDash([8,8]);
+        ctx.strokeStyle='#2563eb';
+    } else {
+        ctx.strokeStyle='black';
+    }
+
+    ctx.lineWidth=3;
+
+    if(scenario.shape==='square'){
+        ctx.strokeRect(x-40,y-40,80,80);
+    }
+
+    else if(scenario.shape==='rectangle'){
+        ctx.strokeRect(x-50,y-30,100,60);
+    }
+
+    else if(scenario.shape==='circle'){
+        ctx.beginPath();
+        ctx.arc(x,y,40,0,Math.PI*2);
+        ctx.stroke();
+    }
+
+    else if(scenario.shape==='triangle'){
+        ctx.beginPath();
+        ctx.moveTo(x,y-45);
+        ctx.lineTo(x-45,y+40);
+        ctx.lineTo(x+45,y+40);
+        ctx.closePath();
+        ctx.stroke();
+    }
+
+    else if(scenario.shape==='dot'){
+        ctx.beginPath();
+        ctx.arc(x,y,6,0,Math.PI*2);
+        dotted ? ctx.stroke() : ctx.fill();
+    }
+
+    ctx.restore();
+}
+
+function drawEye(){
+    // Rotate so pupil always faces the mirror
+    const angle = 0;
+
+    ctx.save();
+
+    ctx.translate(scenario.eyeX, scenario.eyeY);
+    ctx.rotate(angle);
+
+    // flip eye so pupil faces mirror
+    ctx.scale(-1, 1);
+
+    ctx.drawImage(
+        eyeImg,
+        -35,
+        -25,
+        70,
+        50
+    );
+
+    ctx.restore();
+}
+
+function drawCompleted(){
+    if(completed.construction){
+        ctx.save();
+        ctx.setLineDash([8,8]);
+        ctx.strokeStyle='#0ea5e9';
+        ctx.lineWidth=2;
+
+        ctx.beginPath();
+        ctx.moveTo(scenario.objectX, scenario.objectY);
+        ctx.lineTo(scenario.imageX, scenario.imageY);
+        ctx.stroke();
+
+        // equal length marks
+        drawEqualMark(
+            mirrorX - 60,
+            scenario.objectY
+        );
+
+        drawEqualMark(
+            mirrorX + 60,
+            scenario.imageY
+        );
+
+        ctx.restore();
+    }
+
+    if(completed.image){
+        drawObject(
+            scenario.imageX,
+            scenario.imageY,
+            true
+        );
+    }
+
+    if(completed.virtual){
+        ctx.save();
+
+        const y = scenario.eyeY;
+
+        ctx.setLineDash([8,8]);
+        ctx.strokeStyle='#0284c7';
+        ctx.lineWidth=3;
+
+        ctx.beginPath();
+        ctx.moveTo(scenario.imageX, scenario.imageY);
+        ctx.lineTo(mirrorX, y);
+        ctx.stroke();
+
+        ctx.restore();
+
+        ctx.beginPath();
+        ctx.moveTo(mirrorX, y);
+        ctx.lineTo(scenario.eyeX, scenario.eyeY);
+        ctx.stroke();
+
+        drawArrow(
+            mirrorX,
+            y,
+            scenario.eyeX,
+            scenario.eyeY
+        );
+    }
+
+    if(completed.reflected){
+        ctx.strokeStyle='#2563eb';
+        ctx.lineWidth=3;
+
+        ctx.beginPath();
+        ctx.moveTo(scenario.objectX, scenario.objectY);
+        ctx.lineTo(mirrorX, scenario.eyeY);
+        ctx.stroke();
+
+        drawArrow(
+            scenario.objectX,
+            scenario.objectY,
+            mirrorX,
+            scenario.eyeY
+        );
+    }
+}
+
+
+function drawArrow(x1,y1,x2,y2){
+
+    const mx = (x1+x2)/2;
+    const my = (y1+y2)/2;
+
+    const angle = Math.atan2(y2-y1,x2-x1);
+    const size = 12;
+
+    ctx.beginPath();
+
+    ctx.moveTo(mx,my);
+
+    ctx.lineTo(
+        mx-size*Math.cos(angle-Math.PI/6),
+        my-size*Math.sin(angle-Math.PI/6)
+    );
+
+    ctx.moveTo(mx,my);
+
+    ctx.lineTo(
+        mx-size*Math.cos(angle+Math.PI/6),
+        my-size*Math.sin(angle+Math.PI/6)
+    );
+
+    ctx.stroke();
+}
+
+function drawEqualMark(x,y){
+
+    ctx.strokeStyle='#0ea5e9';
+    ctx.lineWidth=2;
+
+    ctx.beginPath();
+    ctx.moveTo(x-8,y-4);
+    ctx.lineTo(x+8,y-4);
+
+    ctx.moveTo(x-8,y+4);
+    ctx.lineTo(x+8,y+4);
+
+    ctx.stroke();
+}
+
+
+function redraw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    drawGrid();
+    drawMirror();
+    drawObject();
+
+    if(eyeImg.complete){
+        drawEye();
+    }
+
+    drawCompleted();
+
+    ctx.strokeStyle='#ef4444';
+    ctx.lineWidth=3;
+
+    for(const path of savedPaths){
+        if(path.length>1){
+            ctx.beginPath();
+            ctx.moveTo(path[0].x,path[0].y);
+
+            for(let i=1;i<path.length;i++){
+                ctx.lineTo(path[i].x,path[i].y);
+            }
+
+            ctx.stroke();
+        }
+    }
+
+    if(currentPath.length>1){
+        ctx.beginPath();
+        ctx.moveTo(currentPath[0].x,currentPath[0].y);
+
+        for(let i=1;i<currentPath.length;i++){
+            ctx.lineTo(currentPath[i].x,currentPath[i].y);
+        }
+
+        ctx.stroke();
+    }
+}
+
+function pos(e){
+    const rect = canvas.getBoundingClientRect();
+
+    return {
+        x:e.clientX-rect.left,
+        y:e.clientY-rect.top
+    };
+}
+
+canvas.addEventListener('pointerdown',e=>{
+    drawing=true;
+    currentPath=[pos(e)];
+});
+
+canvas.addEventListener('pointermove',e=>{
+    if(!drawing)return;
+
+    currentPath.push(pos(e));
+    redraw();
+});
+
+canvas.addEventListener('pointerup',()=>{
+    drawing=false;
+
+    if(currentPath.length>1){
+        savedPaths.push([...currentPath]);
+    }
+
+    currentPath=[];
+    redraw();
+});
+
+document.getElementById('checkBtn').addEventListener('click', () => {
+
+    if(currentStep===1 && currentTool==='construction'){
+        completed.construction=true;
+        currentStep=2;
+        setStatus('Correct! Step 2: Draw the image.');
+    }
+
+    else if(currentStep===2 && currentTool==='image'){
+        completed.image=true;
+        currentStep=3;
+        setStatus('Correct! Step 3: Draw image to eye ray.');
+    }
+
+    else if(currentStep===3 && currentTool==='virtual'){
+        completed.virtual=true;
+        currentStep=4;
+        setStatus('Correct! Step 4: Draw reflected ray.');
+    }
+
+    else if(currentStep===4 && currentTool==='reflected'){
+        completed.reflected=true;
+        currentStep=5;
+        setStatus('Excellent! Completed.');
+    }
+
+    else {
+        setStatus('Wrong step selected.');
+    }
+
+    redraw();
+});
+
+function clearDrawing(){
+    savedPaths=[];
+    currentPath=[];
+    redraw();
+}
+
+eyeImg.onload = () => {
+    newScenario();
+};
+</script>
+
+</body>
+</html>
